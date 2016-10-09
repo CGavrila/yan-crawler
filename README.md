@@ -11,32 +11,38 @@ npm install yan-crawler
 Usage
 ---
 ```javascript
-var Crawler = require('yan-crawler');
-var crawler = Crawler.instance;
+var Crawler = require('yan-crawler').Crawler;
+var crawler = Crawler.getInstance();
 
-crawler.addEntry({
-  name: 'Amazon',
-  callback: function(body, $) {
-    // $ is cheerio - https://github.com/cheeriojs/cheerio
-    console.log('Done with Amazon.');
-  },
-  interval: 3000,
-  url: 'www.amazon.com'
-});
+var amazonTemplate = {
+    name: 'Amazon',
+    url: 'https://www.amazon.com/',
+    interval: 3000,
+    callback: function(body, $) {
+        // $ is cheerio - https://github.com/cheeriojs/cheerio
+        console.log("Grabbed Amazon.");
+    }
+};
 
-crawler.addEntry({
-  name: 'IMDB',
-  callback: function(body, $) {
-    console.log('Done with IMDB.');
-  },
-  interval: 2000,
-  url: 'www.imdb.com'
-});
+var IMDBTemplate = {
+    name: 'IMDB',
+    interval: 2000,
+    url: 'http://www.imdb.com',
+    callback: function(body, $) {
+        console.log('Grabbed IMDB.');
+    }
+};
 
+crawler.addEntry(amazonTemplate);
+crawler.addEntry(IMDBTemplate);
 crawler.start();
 ```
 
 The code above will make requests to `www.amazon.com` every 3000ms and to `www.imdb.com` every 2000ms, calling their respective callbacks when it gets the results.
+
+Typescript
+----------
+This module is written in Typescript, you can 
 
 License
 ---
