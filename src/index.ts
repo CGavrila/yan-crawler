@@ -8,9 +8,13 @@ import * as cheerio from 'cheerio';
 import * as debug from 'debug';
 
 import { EventEmitter } from 'events';
+import { ServerResponse } from 'http';
 
 var debug_crawler = debug('Crawler');
 
+/**
+ * Used as a template for the websites that will be polled.
+ */
 export interface Entry {
     name: string;
     url: string;
@@ -19,43 +23,57 @@ export interface Entry {
 }
 
 /**
- *
- * Singleton class used to scrape websites based on templates and a queue.
- *  - the queue contains the URLs which will be retrieved and then processed as defined by its matching template
-
- *
+ * Poll websites based on provided intervals.
  */
-class Crawler extends EventEmitter {
-    
-    private entries: Entry[];
-    
-    /* Default interval to wait between requests for the same entry (milliseconds) */
-    private DEFAULT_INTERVAL : number = 1000;
+export class Crawler extends EventEmitter {
 
-    private static _instance : Crawler = new Crawler(); 
+    private DEFAULT_INTERVAL : number = 1000; // milliseconds
+
+    private static _instance : Crawler;
+    private started: boolean;
+
+    private entries: { [name: string]: Entry } = {};
+    private intervals: { [name: string]: any } = {};
 
     constructor() {
         super();
+        this.started = false;
         if(Crawler._instance){
             throw new Error("Error: Instantiation failed: Use Crawler.getInstance() instead of new.");
         }
-        Crawler._instance = this;
     }
 
     public static getInstance(): Crawler {
-        return Crawler._instance;
+        return this._instance || (this._instance = new this());
+
     }
 
-    /**
-     * Used to destroy the current instance of the class (it's a Singleton).
-     * Particularly useful for testing.
-     */
     public static destroyInstance(): void {
         Crawler._instance = null;
     }
 
     /**
-     * Adds a template to the scraper.
+     * Starts the process of looping through the queue.
+     */
+    public start(): void {
+        this.started = true;
+        _.map(this.entries, this.createNewInterval.bind(this));
+    }
+
+    public isStarted(): boolean {
+        return this.started;
+    }
+
+    /**
+     * Stops the process of looping through the queue.
+     */
+    public stop(): void {
+        this.started = false;
+        this.clearIntervals();
+    }
+
+    /**
+     * Adds an entry to the scraper.
      *
      * @param {Entry} entry - The properties of the template, including name, matchesFormat, interval and callback.
      */
@@ -63,35 +81,69 @@ class Crawler extends EventEmitter {
         if (!entry.name) throw new Error('Entry name is missing.');
         if (!entry.url) throw new Error('Entry url is missing.');
         if (!entry.callback) throw new Error('Entry callback is missing.');
+        if(this.entries[entry.name] !== undefined) throw new Error('Cannot add two entries with the same name.');
 
         if (!('interval' in entry)) entry.interval = this.DEFAULT_INTERVAL;
 
         this.entries[entry.name] = entry;
+        if(this.isStarted()) {
+            this.createNewInterval(entry);
+        }
     }
 
     /**
-     * Retrieves the current templates used by the scraper.
+     * Add multiple entries to the scraper.
      *
-     * @returns {{}|*} - An array of Entries.
+     * @param {Entry[]} entries - Entries to be added.
      */
-    public getEntries(): Entry[] {
-        return this.entries;
+    public addEntries(entries: Entry[]): void {
+        for(let entry of entries) {
+            this.addEntry(entry);
+        }
     }
 
     /**
-     * Starts the whole process of looping through the queue.
+     * Remove all entries and stops all requests.
      */
-    public start(): void {
-        var that = this;
-        _.forEach(this.entries, function(entry : Entry) {
-            function makeRequest() {
-                debug_crawler('Making request for ' + entry.url);
-                that.makeRequest(entry.url, entry.callback);
-            }
+    public clearEntries(): void {
+        this.entries = {};
+        this.clearIntervals();
+    }
 
-            setTimeout(makeRequest, 0);
-            setInterval(makeRequest, entry.interval);
-        })
+    /**
+     * Remove an entry.
+     *
+     * @param entryName Name of the entry to delete
+     * @returns {boolean} True if successful, false otherwise.
+     */
+    public removeEntry(entryName: string): boolean {
+        if (!entryName) return false;
+        if (!this.entries[entryName]) return false;
+
+        delete this.entries[entryName];
+        clearInterval(this.intervals[entryName]);
+        delete this.intervals[entryName];
+
+        return true;
+    }
+
+    /**
+     * Creates a new interval for an entry;
+     * @param {Entry} entry
+     */
+    private createNewInterval(entry: Entry) {
+        setTimeout(this.makeRequest.bind(this, entry.url, entry.callback), 0);
+        this.intervals[entry.name] = setInterval(this.makeRequest.bind(this, entry.url, entry.callback), entry.interval);
+    }
+
+    /**
+     * Remove all intervals.
+     */
+    private clearIntervals(): void {
+        _.forOwn(this.intervals, function(value, key) {
+            clearInterval(value);
+        });
+        this.intervals = {};
     }
 
     /**
@@ -104,9 +156,10 @@ class Crawler extends EventEmitter {
     private makeRequest(url: string, callback: Function): void {
         /* TODO: take care of other responses than 200. */
 
-        let that = this;
+        debug_crawler('Making request for ' + url);
 
-        request.get(url, function (error, response, body) {
+        let that = this;
+        request.get(url, function (error : Error, response : ServerResponse, body) {
             if (!error && response.statusCode == 200) {
                 debug_crawler('Got results for ' + url);
                 let result = callback(body, cheerio.load(body));
@@ -114,6 +167,17 @@ class Crawler extends EventEmitter {
             }
         });
     }
-}
 
-export default Crawler;
+    /**
+     * Retrieves the current templates used by the scraper.
+     *
+     * @returns {{}|*} - An array of Entries.
+     */
+    public getEntries(): { [name: string]: Entry } {
+        return this.entries;
+    }
+
+    public getIntervals(): { [name: string]: any } {
+        return this.intervals;
+    }
+}

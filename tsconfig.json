@@ -1,9 +1,10 @@
 {
-    "compilerOptions": {
-        "listFiles": true,
-        "module":  "commonjs",
-        "sourceMap": true,
-        "outDir": "./dist",
-        "declaration": true
-    }
+  "compilerOptions": {
+    "listFiles": true,
+    "module":  "commonjs",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "declaration": true,
+    "moduleResolution": "node"
+  }
 }

@@ -1,0 +1,8 @@
+{
+  "resolution": "main",
+  "tree": {
+    "src": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/31b4db7233e018c9c74c7da2de96ec429501f8e2/nock/nock.d.ts",
+    "raw": "registry:dt/nock#8.0.0+20160909083304",
+    "typings": "https://raw.githubusercontent.com/DefinitelyTyped/DefinitelyTyped/31b4db7233e018c9c74c7da2de96ec429501f8e2/nock/nock.d.ts"
+  }
+}

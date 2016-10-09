@@ -9,7 +9,12 @@ module.exports = function(grunt) {
             },
             options: {
                 compiler: './node_modules/typescript/bin/tsc',
-                declaration: true
+                declaration: true,
+                target: 'es5'
+            },
+            tests: {
+                src: ['./test/src/index.ts'],
+                outDir: './test/dist'
             }
         }
     });
