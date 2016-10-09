@@ -40,10 +40,6 @@ crawler.start();
 
 The code above will make requests to `www.amazon.com` every 3000ms and to `www.imdb.com` every 2000ms, calling their respective callbacks when it gets the results.
 
-Typescript
-----------
-This module is written in Typescript, you can 
-
 License
 ---
 MIT
