@@ -15,24 +15,24 @@ var debug_crawler = debug('Crawler');
 /**
  * Used as a template for the websites that will be polled.
  */
-export interface Entry {
+export interface Entry<T> {
     name: string;
     url: string;
     interval?: number;
-    callback: Function;
+    callback: (body: any, $: CheerioStatic) => T;
 }
 
 /**
  * Poll websites based on provided intervals.
  */
-export class Crawler extends EventEmitter {
+export class Crawler<T> extends EventEmitter {
 
     private DEFAULT_INTERVAL : number = 1000; // milliseconds
 
-    private static _instance : Crawler;
+    private static _instance;
     private started: boolean;
 
-    private entries: { [name: string]: Entry } = {};
+    private entries: { [name: string]: Entry<T> } = {};
     private intervals: { [name: string]: any } = {};
 
     constructor() {
@@ -43,7 +43,7 @@ export class Crawler extends EventEmitter {
         }
     }
 
-    public static getInstance(): Crawler {
+    public static getInstance()  {
         return this._instance || (this._instance = new this());
 
     }
@@ -77,7 +77,7 @@ export class Crawler extends EventEmitter {
      *
      * @param {Entry} entry - The properties of the template, including name, matchesFormat, interval and callback.
      */
-    public addEntry(entry: Entry): void {
+    public addEntry(entry: Entry<T>): void {
         if (!entry.name) throw new Error('Entry name is missing.');
         if (!entry.url) throw new Error('Entry url is missing.');
         if (!entry.callback) throw new Error('Entry callback is missing.');
@@ -96,7 +96,7 @@ export class Crawler extends EventEmitter {
      *
      * @param {Entry[]} entries - Entries to be added.
      */
-    public addEntries(entries: Entry[]): void {
+    public addEntries(entries: Entry<T>[]): void {
         for(let entry of entries) {
             this.addEntry(entry);
         }
@@ -131,7 +131,7 @@ export class Crawler extends EventEmitter {
      * Creates a new interval for an entry;
      * @param {Entry} entry
      */
-    private createNewInterval(entry: Entry) {
+    private createNewInterval(entry: Entry<T>) {
         setTimeout(this.makeRequest.bind(this, entry.url, entry.callback), 0);
         this.intervals[entry.name] = setInterval(this.makeRequest.bind(this, entry.url, entry.callback), entry.interval);
     }
@@ -159,7 +159,7 @@ export class Crawler extends EventEmitter {
         debug_crawler('Making request for ' + url);
 
         let that = this;
-        request.get(url, function (error : Error, response : ServerResponse, body) {
+        request.get(url, function (error : Error, response : ServerResponse, body: any) {
             if (!error && response.statusCode == 200) {
                 debug_crawler('Got results for ' + url);
                 let result = callback(body, cheerio.load(body));
@@ -173,7 +173,7 @@ export class Crawler extends EventEmitter {
      *
      * @returns {{}|*} - An array of Entries.
      */
-    public getEntries(): { [name: string]: Entry } {
+    public getEntries(): { [name: string]: Entry<T> } {
         return this.entries;
     }
 

@@ -33,17 +33,17 @@ describe('Crawler', () => {
     });
 
 
-    var amazonTemplate: Entry = {
+    var amazonTemplate: Entry<void> = {
         name: 'Amazon',
         url: 'https://www.amazon.com/',
         interval: INTERVAL,
-        callback: (body, $) => {
+        callback: (body, $): void => {
         }
     };
 
-    var IMDBTemplate: Entry = {
+    var IMDBTemplate: Entry<void> = {
         name: 'IMDB',
-        callback: (body, $) => {
+        callback: (body, $): void => {
         },
         interval: INTERVAL,
         url: 'http://www.imdb.com'
