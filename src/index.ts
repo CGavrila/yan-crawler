@@ -153,7 +153,7 @@ export class Crawler<T> extends EventEmitter {
      * @param {Function} callback - Callback.
      * @private
      */
-    private makeRequest(url: string, callback: Function): void {
+    private makeRequest(url: string, callback: (body: any, $: CheerioStatic) => T): void {
         /* TODO: take care of other responses than 200. */
 
         debug_crawler('Making request for ' + url);
@@ -162,7 +162,7 @@ export class Crawler<T> extends EventEmitter {
         request.get(url, function (error : Error, response : ServerResponse, body: any) {
             if (!error && response.statusCode == 200) {
                 debug_crawler('Got results for ' + url);
-                let result = callback(body, cheerio.load(body));
+                let result: T = callback(body, cheerio.load(body));
                 that.emit('result', result);
             }
         });
